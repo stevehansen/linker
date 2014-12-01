@@ -5,6 +5,8 @@ Create a hard link for files in a specified predefined location (invoked by just
 
 In _directory mode_ (can be invoked with --dir DIRECTORY as arguments) it will deduplicate files in .NET packages folder by creating hardlinks for duplicate (based on filename, size and md5) files.
 
+[![Build status](https://ci.appveyor.com/api/projects/status/ggyyf34sneg9q2ci?svg=true)](https://ci.appveyor.com/project/SteveHansen/linker)
+
 **Samples**
 
     linker C:\Downloads\2014\Document.txt
