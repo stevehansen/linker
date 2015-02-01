@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using FILETIME = System.Runtime.InteropServices.ComTypes.FILETIME;
@@ -18,19 +19,21 @@ namespace Linker
 
         static int Main(string[] args)
         {
-            Console.WriteLine("linker v1.1 (c) Steve Hansen 2014");
+            var assembly = typeof(Program).Assembly;
+            Console.WriteLine("linker v{0}.{1} (c) Steve Hansen 2014", assembly.GetName().Version.Major, assembly.GetName().Version.Minor);
             if (args.Length == 0)
             {
-                var self = Path.GetFileName(typeof(Program).Assembly.Location);
+                var self = Path.GetFileName(assembly.Location);
                 Console.WriteLine(" Usage: {0} \"full file path\"", self);
                 Console.WriteLine("    or: {0} --dir C:\\Code\\", self);
                 return 1;
             }
 
             var existingPath = args[0];
-            if (existingPath == "/dir" || existingPath == "--dir")
+            var isDirArg = existingPath == "/dir" || existingPath == "--dir";
+            if (isDirArg || Directory.Exists(existingPath))
             {
-                var dir = new DirectoryInfo(args.Length >= 2 ? args[1] : Environment.CurrentDirectory);
+                var dir = new DirectoryInfo(isDirArg ? (args.Length >= 2 ? args[1] : Environment.CurrentDirectory) : existingPath);
                 if (!dir.Exists)
                 {
                     Console.Error.WriteLine("Directory doesn't exist.");
@@ -60,8 +63,13 @@ namespace Linker
                     .Select(g => g.ToArray())
                     .Where(g => g.Length > 1)
                     .ToArray();
-                foreach (var fileGroup in fileGroups)
+                Console.WriteLine("  Found {0} duplicate files (based on file size and md5).", fileGroups.Length);
+                for (var i = 0; i < fileGroups.Length; i++)
                 {
+                    Console.Write("  {0} / {1}", i, fileGroups.Length);
+                    Console.CursorLeft = 0;
+
+                    var fileGroup = fileGroups[i];
                     var firstFile = fileGroup[0].FullName;
                     foreach (var otherFile in fileGroup.Skip(1))
                     {
@@ -69,6 +77,7 @@ namespace Linker
                         CreateHardLink(otherFile.FullName, firstFile, IntPtr.Zero);
                     }
                 }
+                Console.WriteLine("  {0} / {0}", fileGroups.Length);
 
                 return 2;
             }
